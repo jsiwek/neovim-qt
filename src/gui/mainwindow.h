@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QStackedWidget>
 #include <QTabBar>
+#include <QCommandLineParser>
 #include "neovimconnector.h"
 #include "errorwidget.h"
 #include "shell.h"
@@ -21,11 +22,13 @@ public:
 		FullScreen,
 	};
 
-	MainWindow(NeovimConnector *, QWidget *parent=0);
+	MainWindow(NeovimConnector *, QWidget *parent=0, const QCommandLineParser *parser=0);
 	bool neovimAttached() const;
 	Shell* shell();
 public slots:
 	void delayedShow(DelayedShow type=DelayedShow::Normal);
+	void openNewWindow() const;
+	void closeWindow();
 signals:
 	void neovimAttached(bool);
 protected:
@@ -54,6 +57,7 @@ private:
 	QStackedWidget m_stack;
 	QTabBar *m_tabline;
 	QToolBar *m_tabline_bar;
+	const QCommandLineParser *m_parser;
 };
 
 } // Namespace

@@ -97,18 +97,10 @@ void App::showUi(NeovimConnector *c, const QCommandLineParser& parser)
 		win->show();
 	}
 #else
-	NeovimQt::MainWindow *win = new NeovimQt::MainWindow(c);
+	NeovimQt::MainWindow *win = new NeovimQt::MainWindow(c, 0, &parser);
 
 	QObject::connect(instance(), SIGNAL(openFilesTriggered(const QList<QUrl>)),
 		win->shell(), SLOT(openFiles(const QList<QUrl>)));
-
-	if (parser.isSet("fullscreen")) {
-		win->delayedShow(NeovimQt::MainWindow::DelayedShow::FullScreen);
-	} else if (parser.isSet("maximized")) {
-		win->delayedShow(NeovimQt::MainWindow::DelayedShow::Maximized);
-	} else {
-		win->delayedShow();
-	}
 #endif
 }
 

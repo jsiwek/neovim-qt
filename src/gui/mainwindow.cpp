@@ -1,14 +1,17 @@
 #include "mainwindow.h"
+#include "app.h"
 
 #include <QCloseEvent>
 #include <QToolBar>
 #include <QLayout>
+#include <QMenuBar>
 
 namespace NeovimQt {
 
-MainWindow::MainWindow(NeovimConnector *c, QWidget *parent)
+MainWindow::MainWindow(NeovimConnector *c, QWidget *parent, const QCommandLineParser *parser)
 :QMainWindow(parent), m_nvim(0), m_errorWidget(0), m_shell(0),
-	m_delayedShow(DelayedShow::Disabled), m_tabline(0), m_tabline_bar(0)
+	m_delayedShow(DelayedShow::Disabled), m_tabline(0), m_tabline_bar(0),
+	m_parser(parser)
 {
 	m_errorWidget = new ErrorWidget();
 	m_stack.addWidget(m_errorWidget);
@@ -16,7 +19,31 @@ MainWindow::MainWindow(NeovimConnector *c, QWidget *parent)
 			this, &MainWindow::reconnectNeovim);
 	setCentralWidget(&m_stack);
 
+	auto newWindowAction = new QAction(tr("&New Window"), this);
+	newWindowAction->setShortcuts(QKeySequence::New);
+	newWindowAction->setStatusTip(tr("Open a new editor window"));
+	connect(newWindowAction, SIGNAL(triggered()), this, SLOT(openNewWindow()));
+
+	auto closeWindowAction = new QAction(tr("&Close Window"), this);
+	closeWindowAction->setShortcuts(QKeySequence::Close);
+	closeWindowAction->setStatusTip(tr("Close the currently active window"));
+	connect(closeWindowAction, SIGNAL(triggered()), this, SLOT(closeWindow()));
+
+	auto fileMenu = menuBar()->addMenu(tr("&File"));
+	fileMenu->addAction(newWindowAction);
+	fileMenu->addAction(closeWindowAction);
+
 	init(c);
+
+	if (parser) {
+		if (parser->isSet("fullscreen")) {
+			delayedShow(NeovimQt::MainWindow::DelayedShow::FullScreen);
+		} else if (parser->isSet("maximized")) {
+			delayedShow(NeovimQt::MainWindow::DelayedShow::Maximized);
+		} else {
+			delayedShow();
+		}
+	}
 }
 
 void MainWindow::init(NeovimConnector *c)
@@ -76,6 +103,20 @@ void MainWindow::init(NeovimConnector *c)
 	if (m_nvim->errorCause()) {
 		neovimError(m_nvim->errorCause());
 	}
+}
+
+void MainWindow::openNewWindow() const
+{
+	if (!m_parser)
+		return;
+
+	auto c = NeovimQt::App::createConnector(*m_parser);
+	new NeovimQt::MainWindow(c, 0, m_parser);
+}
+
+void MainWindow::closeWindow()
+{
+	close();
 }
 
 bool MainWindow::neovimAttached() const
